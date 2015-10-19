@@ -33,6 +33,8 @@ That is now possible.
 
 ## Structure
 
+### Github
+
 The  `saulshanabrook/pypi-dockerhub_` is built through automated builds on Docker Hub.
 
 Each subdirectory of the `saulshanabrook/pypi-dockerhub_` corresponds
@@ -42,4 +44,12 @@ that package. All Dockerfiles extend from python 3.
 There is only one branch (`master`).
 
 Tags are added for each release of each package in the format `<NAME>@<VERSION>` so like `pinggraph@0.0.9`.
+
+### Docker Hub
+
+Each pypi package gets its own docker image under the `pypi` organization.
+
+There is an automated build for each tag, with the subdirectory as the name of the package
+and the docker tag equal to the pypi version. Also there is a `latest` tag pointing to the
+master branch for that subdirectory.
 
