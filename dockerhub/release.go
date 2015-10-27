@@ -118,7 +118,7 @@ func (c *Client) createRepoAndBuild(rel *release.Release) error {
 }
 
 type autobuildReponse struct {
-	BuildTags []buildTag `json:"builds_tags"`
+	BuildTags []buildTag `json:"build_tags"`
 }
 
 func (c *Client) checkBuildExists(rel *release.Release) (bool, error) {
