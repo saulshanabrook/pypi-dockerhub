@@ -4,6 +4,7 @@ import (
 	"os"
 
 	log "github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/saulshanabrook/pypi-dockerhub/release"
 	"github.com/saulshanabrook/pypi-dockerhub/storage"
 
 	"github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/codegangsta/cli"
@@ -105,6 +106,16 @@ func main() {
 			Name:   "debug",
 			EnvVar: "DEBUG",
 		},
+		cli.StringFlag{
+			Name:   "test-name",
+			Usage:  "If provided, will not query pypi for all packages, instead just use this name",
+			EnvVar: "TEST_NAME",
+		},
+		cli.StringFlag{
+			Name:   "test-version",
+			Usage:  "If provided, will not query pypi for all packages, instead just use this version",
+			EnvVar: "TEST_VERSION",
+		},
 	}
 
 	app.Commands = []cli.Command{{
@@ -125,20 +136,30 @@ func main() {
 	app.Usage = "Create automated dockerhub builds for pypi packages"
 	app.Action = func(c *cli.Context) {
 		setupLogging(c)
-		pypiClient := getPypiClient(c)
-		storageClient := getStorageClient(c)
-		time, err := storageClient.GetTime()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err":     err,
-				"storage": storageClient,
-			}).Fatal("couldnt get initial time")
-		}
-		rels, err := pypiClient.ReleasesSince(time)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err": err,
-			}).Fatal("couldnt get releases from pypi")
+		var rels []*release.Release
+		var storageClient storage.Client
+		if c.GlobalIsSet("test-name") {
+			rels = []*release.Release{{
+				Name:    c.GlobalString("test-name"),
+				Version: c.GlobalString("test-version"),
+				Time:    0,
+			}}
+		} else {
+			pypiClient := getPypiClient(c)
+			storageClient = getStorageClient(c)
+			time, err := storageClient.GetTime()
+			if err != nil {
+				log.WithFields(log.Fields{
+					"err":     err,
+					"storage": storageClient,
+				}).Fatal("couldnt get initial time")
+			}
+			rels, err = pypiClient.ReleasesSince(time)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"err": err,
+				}).Fatal("couldnt get releases from pypi")
+			}
 		}
 		dockerhubClient := getDockerhubClient(c)
 		githubClient := getGithubClient(c)
@@ -146,23 +167,24 @@ func main() {
 		for _, rel := range rels {
 			rel.Log().Info("Adding Release")
 
-			if err = githubClient.AddRelease(rel); err != nil {
+			if err := githubClient.AddRelease(rel); err != nil {
 				rel.Log().WithFields(log.Fields{
 					"err": err,
 				}).Fatal("couldnt add releases to github")
 			}
 
-			if err = dockerhubClient.AddRelease(rel); err != nil {
+			if err := dockerhubClient.AddRelease(rel); err != nil {
 				rel.Log().WithFields(log.Fields{
 					"err": err,
 				}).Fatal("couldnt add release to dockerhub")
 			}
-
-			if err = storageClient.SetTime(rel.Time); err != nil {
-				rel.Log().WithFields(log.Fields{
-					"err":     err,
-					"storage": storageClient,
-				}).Fatal("couldnt set time in storage client")
+			if storageClient != nil {
+				if err := storageClient.SetTime(rel.Time); err != nil {
+					rel.Log().WithFields(log.Fields{
+						"err":     err,
+						"storage": storageClient,
+					}).Fatal("couldnt set time in storage client")
+				}
 			}
 		}
 	}
