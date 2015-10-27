@@ -1,9 +1,6 @@
 {
   "name": "PyPi -> Dockerhub",
   "repository": "https://github.com/saulshanabrook/pypi-dockerhub",
-  "scripts": {
-    "postdeploy": "pypi-dockerhub --initial-time 1445304164"
-  },
   "env": {
     "GITHUB_OWNER": {},
     "GITHUB_REPO": {},

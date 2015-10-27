@@ -86,8 +86,7 @@ GLOBAL OPTIONS:
 ```
 
 ## Deploying
-Deploy this on heroku, then add a scheduler task every couple of hours to run
-`pypi-dockerhub`
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+1. Deploy this to Heroku [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+2. Do an initial run, starting at some time (seconds from epoch) `heroku run pypi-dockerhub --initial-time 1445304164`
+3. Add scheduler task to run `pypi-dockerhub` every couple of hours.
 
