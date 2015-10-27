@@ -102,8 +102,9 @@ func (c *Client) addTag(rel *release.Release, rcr *github.RepositoryContentRespo
 }
 
 func (c *Client) tagExists(rel *release.Release) (bool, error) {
-	_, _, err := c.client.Git.GetRef(
+	t1, t2, err := c.client.Git.GetRef(
 		c.owner, c.repo, fmt.Sprintf("tags/%v", rel.GithubTagName()))
+	fmt.Printf("%v\n\n%v\n\n%v", t1, t2, err)
 	if err != nil && (strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "409 Git Repository is empty")) {
 		return false, nil
 	}
