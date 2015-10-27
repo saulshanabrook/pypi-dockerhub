@@ -111,7 +111,7 @@ func (c *Client) createRepoAndBuild(rel *release.Release) error {
 		return wrapError(err, "turning off autobuild")
 	}
 	if resJSON.Active != false {
-		fmt.Errorf("Couldnt turn off autobuilding")
+		return fmt.Errorf("Couldnt turn off autobuilding")
 	}
 	err = res.Body.Close()
 	return wrapError(err, "closing body on PATCH autobuild/")
