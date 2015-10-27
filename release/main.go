@@ -24,7 +24,7 @@ func (r *Release) DockerfileContents() string {
 }
 
 func (r *Release) GithubTagName() string {
-	return fmt.Sprintf("%v@%v", r.Name, r.Version)
+	return fmt.Sprintf("%v@%v", strings.ToLower(r.Name), r.Version)
 }
 
 func (r *Release) GithubTagMessage(rcr *github.RepositoryContentResponse) string {
