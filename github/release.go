@@ -1,8 +1,8 @@
 package github
 
 import (
+	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	log "github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/Sirupsen/logrus"
@@ -105,8 +105,10 @@ func (c *Client) addTag(rel *release.Release, rcr *github.RepositoryContentRespo
 func (c *Client) tagExists(rel *release.Release) (bool, error) {
 	_, _, err := c.client.Git.GetRef(
 		c.owner, c.repo, fmt.Sprintf("tags/%v", rel.GithubTagName()))
-	fmt.Printf("%v: %v", reflect.TypeOf(err), err)
-	if err != nil && (strings.Contains(err.Error(), "404 Not Found") || strings.Contains(err.Error(), "409 Git Repository is empty")) {
+	notFound := err != nil && strings.Contains(err.Error(), "404 Not Found")
+	repoEmpty := err != nil && strings.Contains(err.Error(), "409 Git Repository is empty")
+	_, multipleRefsRet := err.(*json.UnmarshalTypeError)
+	if notFound || repoEmpty || multipleRefsRet {
 		return false, nil
 	}
 	return true, err
