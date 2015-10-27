@@ -53,3 +53,41 @@ There is an automated build for each tag, with the subdirectory as the name of t
 and the docker tag equal to the pypi version. Also there is a `latest` tag pointing to the
 master branch for that subdirectory.
 
+## Running
+
+```
+$ go install github.com/saulshanabrook/pypi-dockerhub
+$ pypi-dockerhub --help
+NAME:
+   sync - Create automated dockerhub builds for pypi packages
+
+USAGE:
+   sync [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.0
+
+COMMANDS:
+   remove-dockerhub	Remove all builds in dockerhub
+   help, h		Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --github-owner 		 [$GITHUB_OWNER]
+   --github-repo 		 [$GITHUB_REPO]
+   --github-token 		 [$GITHUB_TOKEN]
+   --dockerhub-username 	 [$DOCKERHUB_USERNAME]
+   --dockerhub-password 	 [$DOCKERHUB_PASSWORD]
+   --dockerhub-owner 		 [$DOCKERHUB_OWNER]
+   --redis-url 			if not provided, then will not persist the last update time, and you must provide `initial-time` [$REDIS_URL]
+   --initial-time "0"		If provided, this time (in seconds since epoch) will overwrite the recorded last update time [$INITIAL_DATE]
+   --debug			 [$DEBUG]
+   --help, -h			show help
+   --version, -v		print the version
+```
+
+## Deploying
+Deploy this on heroku, then add a scheduler task every couple of hours to run
+`pypi-dockerhub`
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+

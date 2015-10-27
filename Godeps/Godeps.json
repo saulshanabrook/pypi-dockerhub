@@ -1,0 +1,52 @@
+{
+	"ImportPath": "github.com/saulshanabrook/pypi-dockerhub",
+	"GoVersion": "go1.5.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.7-30-g4643a7e",
+			"Rev": "4643a7efec9b8fd7548882e7b30095711343100f"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-139-g142e6cd",
+			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
+		},
+		{
+			"ImportPath": "github.com/franela/goreq",
+			"Rev": "72c51a544272e007ab3da4f7d9ac959b7af7af03"
+		},
+		{
+			"ImportPath": "github.com/google/go-github/github",
+			"Rev": "9420d0f48acb838ccf8a7f8dde9eaee19af71132"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
+		},
+		{
+			"ImportPath": "github.com/kolo/xmlrpc",
+			"Rev": "0826b98aaa29c0766956cb40d45cf7482a597671"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "82de3fe653a61c1b0174fba87c5f1ca06226ed51"
+		},
+		{
+			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
+			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3",
+			"Comment": "v3.2.13",
+			"Rev": "96fcac6a430e74927b638b73f373ad4d99de005b"
+		}
+	]
+}

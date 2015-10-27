@@ -1,0 +1,23 @@
+{
+  "name": "PyPi -> Dockerhub",
+  "repository": "https://github.com/saulshanabrook/pypi-dockerhub",
+  "success_url": "/welcome",
+  "scripts": {
+    "postdeploy": "pypi-dockerhub --initial-time 1445304164"
+  },
+  "env": {
+    "GITHUB_OWNER": {},
+    "GITHUB_REPO": {},
+    "GITHUB_TOKEN": {},
+    "DOCKERHUB_USERNAME": {},
+    "DOCKERHUB_PASSWORD": {},
+    "DOCKERHUB_OWNER": {},
+    "DEBUG": {
+      "value": "true"
+    }
+  },
+  "addons": [
+    "heroku-redis",
+    "scheduler"
+  ],
+}
