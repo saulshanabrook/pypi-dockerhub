@@ -12,6 +12,34 @@ func (c *Client) AddRelease(rel *release.Release) (err error) {
 	if err != nil {
 		return wrapError(err, "checking repo exists")
 	}
+	if repoExists {
+		rel.Log().Debug("Dockerhub: Exists; checking if automated builds exist")
+		automatedExists, err := c.checkAutomatedExists(rel)
+		if err != nil {
+			return wrapError(err, "checking automated builds exist")
+		}
+		if automatedExists {
+			rel.Log().Debug("Dockerhub: Exists; checking if build exists")
+			buildExists, err := c.checkBuildExists(rel)
+			if err != nil {
+				return wrapError(err, "checking build exists")
+			}
+			if !buildExists {
+				rel.Log().Debug("Dockerhub: creating build")
+				if err = c.createBuild(rel); err != nil {
+					return wrapError(err, "creating build")
+				}
+			} else {
+				rel.Log().Debug("Dockerhub: build already exists")
+			}
+		} else {
+			rel.Log().Debug("Dockerhub: doesn't exist; deleting whole repo")
+			c.DeleteRepo(rel)
+			repoExists = !repoExists
+		}
+
+	}
+
 	if !repoExists {
 		rel.Log().Debug("Dockerhub: Doesn't exist; creating repo and build")
 		if err = c.createRepoAndBuild(rel); err != nil {
@@ -43,6 +71,20 @@ func (c *Client) AddRelease(rel *release.Release) (err error) {
 }
 
 func (c *Client) checkRepoExists(rel *release.Release) (bool, error) {
+	res, err := c.callRepo(rel, "", "GET", nil, 0, nil)
+	if err != nil {
+		return false, err
+	}
+	if res.StatusCode == 404 {
+		return false, nil
+	}
+	if res.StatusCode == 200 {
+		return true, nil
+	}
+	return false, wrongResponseError(res, "repo should have either been a 404 or a 200")
+}
+
+func (c *Client) checkAutomatedExists(rel *release.Release) (bool, error) {
 	res, err := c.callRepo(rel, "autobuild/", "GET", nil, 0, nil)
 	if err != nil {
 		return false, err
