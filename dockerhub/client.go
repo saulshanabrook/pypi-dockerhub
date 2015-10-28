@@ -37,10 +37,10 @@ func NewClient(auth *Auth, githubOwner, githubRepo, dockerhubOwner string) (c *C
 	return c, wrapError(err, "verifying logged in")
 }
 
-func (c *Client) callAPI(path, method string, body interface{}, statusCode int, resJSON interface{}) (res *goreq.Response, err error) {
+func (c *Client) callURL(url, method string, body interface{}, statusCode int, resJSON interface{}) (res *goreq.Response, err error) {
 	req := goreq.Request{
 		Method:      method,
-		Uri:         fmt.Sprintf("https://hub.docker.com/%v", path),
+		Uri:         url,
 		Body:        body,
 		CookieJar:   c.jar,
 		Accept:      "application/json",
@@ -53,21 +53,24 @@ func (c *Client) callAPI(path, method string, body interface{}, statusCode int, 
 	}
 	res, err = req.Do()
 	if err != nil {
-		return res, wrapError(err, fmt.Sprintf("%v to %v", method, path))
+		return res, wrapError(err, fmt.Sprintf("%v to %v", method, url))
 	}
 	if statusCode != 0 && res.StatusCode != statusCode {
 		return res, wrongResponseError(res,
-			fmt.Sprintf("%v to %v should have returned a %v", method, path, statusCode))
+			fmt.Sprintf("%v to %v should have returned a %v", method, url, statusCode))
 	}
 	if resJSON == nil {
 		return
 	}
 	err = res.Body.FromJsonTo(resJSON)
 	if err != nil {
-		return res, wrapError(err, fmt.Sprintf("extracting JSON from %v to %v", method, path))
+		return res, wrapError(err, fmt.Sprintf("extracting JSON from %v to %v", method, url))
 	}
 	return
+}
 
+func (c *Client) callAPI(path, method string, body interface{}, statusCode int, resJSON interface{}) (res *goreq.Response, err error) {
+	return c.callURL(fmt.Sprintf("https://hub.docker.com/%v", path), method, body, statusCode, resJSON)
 }
 
 func (c *Client) callRepo(rel *release.Release, path, method string, body interface{}, statusCode int, resJSON interface{}) (*goreq.Response, error) {

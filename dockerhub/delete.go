@@ -30,17 +30,27 @@ func (c *Client) DeleteAll() error {
 }
 
 func (c *Client) allRepos() (repos []*release.Release, err error) {
+	return c.someRepos("https://hub.docker.com/v2/repositories/pypi/?page=1&page_size=100")
+}
+
+func (c *Client) someRepos(url string) (repos []*release.Release, err error) {
 	var resJSON struct {
+		Next    string `json:"next"`
 		Results []struct {
 			Name string
 		}
 	}
 	repos = []*release.Release{}
-	if _, err = c.callAPI("v2/repositories/pypi/?page=1&page_size=100", "GET", "", 200, &resJSON); err != nil {
+	if _, err = c.callURL(url, "GET", "", 200, &resJSON); err != nil {
 		return
 	}
 	for _, res := range resJSON.Results {
 		repos = append(repos, &release.Release{res.Name, "", 0})
 	}
-	return
+	if resJSON.Next != "" {
+		var moreRepos []*release.Release
+		moreRepos, err = c.someRepos(resJSON.Next)
+		repos = append(repos, moreRepos...)
+	}
+	return repos, err
 }
