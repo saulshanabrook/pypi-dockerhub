@@ -1,11 +1,11 @@
 package dockerhub
 
 import (
-	log "github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/saulshanabrook/pypi-dockerhub/release"
+	"github.com/Sirupsen/logrus"
+	"github.com/saulshanabrook/pypi-dockerhub/db"
 )
 
-func (c *Client) DeleteRepo(rel *release.Release) error {
+func (c *Client) DeleteRepo(rel Release) error {
 	res, err := c.callRepo(rel, "", "DELETE", "", 202, nil)
 	if err != nil {
 		return err
@@ -19,8 +19,8 @@ func (c *Client) DeleteAll() error {
 		return err
 	}
 	for _, repo := range repos {
-		log.WithFields(log.Fields{
-			"name": repo,
+		logrus.WithFields(logrus.Fields{
+			"release": repo,
 		}).Info("Removing repo")
 		if err = c.DeleteRepo(repo); err != nil {
 			return err
@@ -29,26 +29,26 @@ func (c *Client) DeleteAll() error {
 	return nil
 }
 
-func (c *Client) allRepos() (repos []*release.Release, err error) {
+func (c *Client) allRepos() (repos []Release, err error) {
 	return c.someRepos("https://hub.docker.com/v2/repositories/pypi/?page=1&page_size=100")
 }
 
-func (c *Client) someRepos(url string) (repos []*release.Release, err error) {
+func (c *Client) someRepos(url string) (repos []Release, err error) {
 	var resJSON struct {
 		Next    string `json:"next"`
 		Results []struct {
 			Name string
 		}
 	}
-	repos = []*release.Release{}
+	repos = []Release{}
 	if _, err = c.callURL(url, "GET", "", 200, &resJSON); err != nil {
 		return
 	}
 	for _, res := range resJSON.Results {
-		repos = append(repos, &release.Release{res.Name, "", 0})
+		repos = append(repos, &db.Release{Name: res.Name})
 	}
 	if resJSON.Next != "" {
-		var moreRepos []*release.Release
+		var moreRepos []Release
 		moreRepos, err = c.someRepos(resJSON.Next)
 		repos = append(repos, moreRepos...)
 	}

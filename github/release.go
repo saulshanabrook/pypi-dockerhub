@@ -5,62 +5,73 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/google/go-github/github"
-	"github.com/saulshanabrook/pypi-dockerhub/release"
+	"github.com/google/go-github/github"
+
+	log "github.com/Sirupsen/logrus"
 )
 
-func (c *Client) AddRelease(rel *release.Release) error {
-	rel.Log().Debug("Github: Checking tag exists")
-	tagExists, err := c.tagExists(rel)
-	if err != nil {
-		return wrapError(err, "checking if tag exists")
-	}
-	if tagExists {
-		rel.Log().Debug("Github: Already exists; skipping")
-		return nil
-	}
+type Release interface {
+	DockerfileContents() string
+	DockerfilePath() string
+	GitCommitMessage() string
+	GitTagName() string
+	GitTagMessage() string
+}
 
-	rel.Log().Debug("Github: Getting current dockerfile")
+// AddRelease takes Release r and adds it to Github.
+// 1. Commit contents r.FileContents at r.FilePath with message r.CommitMessage
+// 2. Add tag r.TagName with message r.TagMessage
+func (c *Client) AddRelease(rel Release) error {
+	// log.Debug("Github: Checking tag exists")
+	// tagExists, err := c.tagExists(rel)
+	// if err != nil {
+	// 	return wrapError(err, "checking if tag exists")
+	// }
+	// if tagExists {
+	// 	log.Debug("Github: Already exists; skipping")
+	// 	return nil
+	// }
+
+	log.Debug("Github: Getting current dockerfile")
 	prevFileContent, err := c.currentDockerfile(rel)
 	var rcr *github.RepositoryContentResponse
 	if err == nil {
-		rel.Log().Debug("Github: Found; updating it with new version")
+		log.Debug("Github: Found; updating it with new version")
 		rcr, err = c.updateDockerfile(rel, *prevFileContent.SHA)
 	} else {
-		rel.Log().Debug("Github: Didn't find; adding it")
+		log.Debug("Github: Didn't find; adding it")
 		rcr, err = c.addDockerfile(rel)
 	}
 	if err != nil {
 		return wrapError(err, "updating/adding dockerfile")
 	}
-	rel.Log().Debug("Github: Adding tag")
+	log.Debug("Github: Adding tag")
 	return wrapError(c.addTag(rel, rcr), "adding tag")
 }
 
-func (c *Client) currentDockerfile(rel *release.Release) (content *github.RepositoryContent, err error) {
-	content, _, _, err = c.client.Repositories.GetContents(c.owner, c.repo, rel.DockerfilePath(), &github.RepositoryContentGetOptions{})
+func (c *Client) currentDockerfile(rel Release) (content *github.RepositoryContent, err error) {
+	content, _, _, err = c.client.Repositories.GetContents(c.Owner, c.Name, rel.DockerfilePath(), &github.RepositoryContentGetOptions{})
 	return
 }
 
-func (c *Client) updateDockerfile(rel *release.Release, sha string) (rcr *github.RepositoryContentResponse, err error) {
-	message := rel.GithubCommitMessage()
+func (c *Client) updateDockerfile(rel Release, sha string) (rcr *github.RepositoryContentResponse, err error) {
+	message := rel.GitCommitMessage()
 	newFileContent := github.RepositoryContentFileOptions{
 		Message: &message,
 		Content: []byte(rel.DockerfileContents()),
 		SHA:     &sha,
 	}
-	rcr, _, err = c.client.Repositories.UpdateFile(c.owner, c.repo, rel.DockerfilePath(), &newFileContent)
+	rcr, _, err = c.client.Repositories.UpdateFile(c.Owner, c.Name, rel.DockerfilePath(), &newFileContent)
 	return
 }
 
-func (c *Client) addDockerfile(rel *release.Release) (rcr *github.RepositoryContentResponse, err error) {
-	message := rel.GithubCommitMessage()
+func (c *Client) addDockerfile(rel Release) (rcr *github.RepositoryContentResponse, err error) {
+	message := rel.GitCommitMessage()
 	newFileContent := github.RepositoryContentFileOptions{
 		Message: &message,
 		Content: []byte(rel.DockerfileContents()),
 	}
-	rcr, _, err = c.client.Repositories.CreateFile(c.owner, c.repo, rel.DockerfilePath(), &newFileContent)
+	rcr, _, err = c.client.Repositories.CreateFile(c.Owner, c.Name, rel.DockerfilePath(), &newFileContent)
 	return
 }
 
@@ -70,10 +81,10 @@ func (c *Client) addTagRef(tag *github.Tag) (err error) {
 		Ref:    &refName,
 		Object: tag.Object,
 	}
-	_, _, err = c.client.Git.CreateRef(c.owner, c.repo, &ref)
+	_, _, err = c.client.Git.CreateRef(c.Owner, c.Name, &ref)
 	if err != nil && strings.Contains(err.Error(), "Reference already exists") {
 		log.Debug("Github: Ref already existed; deleting and trying again")
-		_, err = c.client.Git.DeleteRef(c.owner, c.repo, refName)
+		_, err = c.client.Git.DeleteRef(c.Owner, c.Name, refName)
 		if err != nil {
 			return wrapError(err, "deleting ref")
 		}
@@ -81,9 +92,9 @@ func (c *Client) addTagRef(tag *github.Tag) (err error) {
 	}
 	return wrapError(err, "creating ref")
 }
-func (c *Client) addTag(rel *release.Release, rcr *github.RepositoryContentResponse) (err error) {
-	tagName := rel.GithubTagName()
-	tagMessage := rel.GithubTagMessage(rcr)
+func (c *Client) addTag(rel Release, rcr *github.RepositoryContentResponse) (err error) {
+	tagName := rel.GitTagName()
+	tagMessage := rel.GitTagMessage()
 	objectType := "commit"
 	tag := &github.Tag{
 		Tag:     &tagName,
@@ -95,16 +106,16 @@ func (c *Client) addTag(rel *release.Release, rcr *github.RepositoryContentRespo
 			SHA:  rcr.SHA,
 		},
 	}
-	tag, _, err = c.client.Git.CreateTag(c.owner, c.repo, tag)
+	tag, _, err = c.client.Git.CreateTag(c.Owner, c.Name, tag)
 	if err != nil {
 		return err
 	}
 	return c.addTagRef(tag)
 }
 
-func (c *Client) tagExists(rel *release.Release) (bool, error) {
+func (c *Client) tagExists(rel Release) (bool, error) {
 	_, _, err := c.client.Git.GetRef(
-		c.owner, c.repo, fmt.Sprintf("tags/%v", rel.GithubTagName()))
+		c.Owner, c.Name, fmt.Sprintf("tags/%v", rel.GitTagName()))
 	notFound := err != nil && strings.Contains(err.Error(), "404 Not Found")
 	repoEmpty := err != nil && strings.Contains(err.Error(), "409 Git Repository is empty")
 	_, multipleRefsRet := err.(*json.UnmarshalTypeError)

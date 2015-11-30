@@ -3,37 +3,45 @@ package dockerhub
 import (
 	"fmt"
 
-	"github.com/saulshanabrook/pypi-dockerhub/release"
+	log "github.com/Sirupsen/logrus"
 )
 
-func (c *Client) AddRelease(rel *release.Release) (err error) {
-	rel.Log().Debug("Dockerhub: checking if repo exists")
+type Release interface {
+	DockerHubTag() string
+	DockerHubRepoShortDescription() string
+	DockerHubRepoFullDescription() string
+	DockerfilePath() string
+	GitTagName() string
+}
+
+func (c *Client) AddRelease(rel Release) (err error) {
+	log.Debug("DockerHub: checking if repo exists")
 	repoExists, err := c.checkRepoExists(rel)
 	if err != nil {
 		return wrapError(err, "checking repo exists")
 	}
 	if repoExists {
-		rel.Log().Debug("Dockerhub: Exists; checking if automated builds exist")
+		log.Debug("DockerHub: Exists; checking if automated builds exist")
 		automatedExists, err := c.checkAutomatedExists(rel)
 		if err != nil {
 			return wrapError(err, "checking automated builds exist")
 		}
 		if automatedExists {
-			rel.Log().Debug("Dockerhub: Exists; checking if build exists")
+			log.Debug("DockerHub: Exists; checking if build exists")
 			buildExists, err := c.checkBuildExists(rel)
 			if err != nil {
 				return wrapError(err, "checking build exists")
 			}
 			if !buildExists {
-				rel.Log().Debug("Dockerhub: creating build")
+				log.Debug("DockerHub: creating build")
 				if err = c.createBuild(rel); err != nil {
 					return wrapError(err, "creating build")
 				}
 			} else {
-				rel.Log().Debug("Dockerhub: build already exists")
+				log.Debug("DockerHub: build already exists")
 			}
 		} else {
-			rel.Log().Debug("Dockerhub: doesn't exist; deleting whole repo")
+			log.Debug("DockerHub: doesn't exist; deleting whole repo")
 			c.DeleteRepo(rel)
 			repoExists = !repoExists
 		}
@@ -41,36 +49,36 @@ func (c *Client) AddRelease(rel *release.Release) (err error) {
 	}
 
 	if !repoExists {
-		rel.Log().Debug("Dockerhub: Doesn't exist; creating repo and build")
+		log.Debug("DockerHub: Doesn't exist; creating repo and build")
 		if err = c.createRepoAndBuild(rel); err != nil {
 			return wrapError(err, "creating repo and build")
 		}
 	} else {
-		rel.Log().Debug("Dockerhub: Exists; checking if build exists")
+		log.Debug("DockerHub: Exists; checking if build exists")
 		buildExists, err := c.checkBuildExists(rel)
 		if err != nil {
 			return wrapError(err, "checking build exists")
 		}
 		if !buildExists {
-			rel.Log().Debug("Dockerhub: creating build")
+			log.Debug("DockerHub: creating build")
 			if err = c.createBuild(rel); err != nil {
 				return wrapError(err, "creating build")
 			}
 		} else {
-			rel.Log().Debug("Dockerhub: build already exists")
+			log.Debug("DockerHub: build already exists")
 		}
 	}
-	rel.Log().Debug("Dockerhub: triggering build")
-	if err = c.triggerBuild(rel); err != nil {
-		return wrapError(err, "triggering build")
-	}
-
-	rel.Log().Debug("Dockerhub: setting full description")
+	log.Debug("DockerHub: setting full description")
 	err = c.setFullDescription(rel)
 	return wrapError(err, "setting full description")
 }
 
-func (c *Client) checkRepoExists(rel *release.Release) (bool, error) {
+func (c *Client) TriggerRelease(rel Release) error {
+	log.Debug("DockerHub: triggering build")
+	return wrapError(c.triggerBuild(rel), "triggering build")
+}
+
+func (c *Client) checkRepoExists(rel Release) (bool, error) {
 	res, err := c.callRepo(rel, "", "GET", nil, 0, nil)
 	if err != nil {
 		return false, err
@@ -84,7 +92,7 @@ func (c *Client) checkRepoExists(rel *release.Release) (bool, error) {
 	return false, wrongResponseError(res, "repo should have either been a 404 or a 200")
 }
 
-func (c *Client) checkAutomatedExists(rel *release.Release) (bool, error) {
+func (c *Client) checkAutomatedExists(rel Release) (bool, error) {
 	res, err := c.callRepo(rel, "autobuild/", "GET", nil, 0, nil)
 	if err != nil {
 		return false, err
@@ -105,12 +113,12 @@ type buildTag struct {
 	DockerfileLocation string `json:"dockerfile_location"`
 }
 
-func (c *Client) createRepoAndBuild(rel *release.Release) error {
+func (c *Client) createRepoAndBuild(rel Release) error {
 	body := struct {
 		Active            bool       `json:"active"`
 		BuildTags         []buildTag `json:"build_tags"`
 		Description       string     `json:"description"`
-		DockerhubRepoName string     `json:"dockerhub_repo_name"`
+		DockerHubRepoName string     `json:"dockerHub_repo_name"`
 		IsPrivate         bool       `json:"is_private"`
 		Name              string     `json:"name"`
 		Namespace         string     `json:"namespace"`
@@ -124,18 +132,18 @@ func (c *Client) createRepoAndBuild(rel *release.Release) error {
 			SourceName:         "master",
 			DockerfileLocation: rel.DockerfilePath(),
 		}, {
-			Name:               rel.DockerhubTag(),
+			Name:               rel.DockerHubTag(),
 			SourceType:         "Tag",
-			SourceName:         rel.GithubTagName(),
+			SourceName:         rel.GitTagName(),
 			DockerfileLocation: rel.DockerfilePath(),
 		}},
-		Description:       rel.DockerhubRepoShortDescription(),
-		DockerhubRepoName: fmt.Sprintf("%v/%v", c.dockerhubOwner, rel.DockerhubName()),
+		Description:       rel.DockerHubRepoShortDescription(),
+		DockerHubRepoName: fmt.Sprintf("%v/%v", c.Owner, c.Name),
 		IsPrivate:         false,
-		Name:              rel.DockerhubName(),
-		Namespace:         c.dockerhubOwner,
+		Name:              c.Name,
+		Namespace:         c.Owner,
 		Provider:          "github",
-		VCSRepoName:       fmt.Sprintf("%v/%v", c.githubOwner, c.githubRepo),
+		VCSRepoName:       fmt.Sprintf("%v/%v", c.github.Owner, c.github.Name),
 	}
 	res, err := c.callRepo(rel, "autobuild/", "POST", body, 201, nil)
 	if err != nil {
@@ -163,13 +171,13 @@ type autobuildReponse struct {
 	BuildTags []buildTag `json:"build_tags"`
 }
 
-func (c *Client) checkBuildExists(rel *release.Release) (bool, error) {
+func (c *Client) checkBuildExists(rel Release) (bool, error) {
 	var resJSON autobuildReponse
 	if _, err := c.callRepo(rel, "autobuild/", "GET", "", 200, &resJSON); err != nil {
 		return false, err
 	}
 	for _, bt := range resJSON.BuildTags {
-		if bt.Name == rel.DockerhubTag() {
+		if bt.Name == rel.DockerHubTag() {
 			return true, nil
 		}
 	}
@@ -183,17 +191,17 @@ type completeBuildTag struct {
 	RepoName  string `json:"repo_name"`
 }
 
-func (c *Client) createBuild(rel *release.Release) error {
+func (c *Client) createBuild(rel Release) error {
 	body := completeBuildTag{
 		buildTag: buildTag{
-			Name:               rel.DockerhubTag(),
+			Name:               rel.DockerHubTag(),
 			SourceType:         "Tag",
-			SourceName:         rel.GithubTagName(),
+			SourceName:         rel.GitTagName(),
 			DockerfileLocation: rel.DockerfilePath(),
 		},
 		IsNew:     true,
-		Namespace: c.dockerhubOwner,
-		RepoName:  rel.DockerhubName(),
+		Namespace: c.Owner,
+		RepoName:  c.Name,
 	}
 	res, err := c.callRepo(rel, "autobuild/tags/", "POST", body, 201, nil)
 	if err != nil {
@@ -202,7 +210,7 @@ func (c *Client) createBuild(rel *release.Release) error {
 	return wrapError(res.Body.Close(), "closing body on autobuild/tags")
 }
 
-func (c *Client) triggerBuild(rel *release.Release) (err error) {
+func (c *Client) triggerBuild(rel Release) (err error) {
 	_, err = c.callRepo(rel, "autobuild/trigger-build/", "POST", "", 201, nil)
 	return
 }
@@ -211,7 +219,7 @@ type fullDescriptionBody struct {
 	FullDescription string `json:"full_description"`
 }
 
-func (c *Client) setFullDescription(rel *release.Release) (err error) {
-	_, err = c.callRepo(rel, "", "PATCH", fullDescriptionBody{rel.DockerhubRepoFullDescription()}, 200, nil)
+func (c *Client) setFullDescription(rel Release) (err error) {
+	_, err = c.callRepo(rel, "", "PATCH", fullDescriptionBody{rel.DockerHubRepoFullDescription()}, 200, nil)
 	return
 }

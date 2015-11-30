@@ -1,5 +1,5 @@
 {
-  "name": "PyPi -> Dockerhub",
+  "name": "PyPi -> DockerHub",
   "repository": "https://github.com/saulshanabrook/pypi-dockerhub",
   "env": {
     "GITHUB_OWNER": {},

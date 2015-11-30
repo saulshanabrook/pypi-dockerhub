@@ -3,7 +3,7 @@ package dockerhub
 import (
 	"fmt"
 
-	"github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/franela/goreq"
+	"github.com/franela/goreq"
 )
 
 func wrapError(err error, message string) error {

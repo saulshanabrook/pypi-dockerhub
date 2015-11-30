@@ -1,0 +1,12 @@
+app:
+  build: .
+  environment:
+    DATABASE_URL: 'postgres://postgres@pypidockerhub_db_1:5432/postgres?sslmode=disable'
+    PORT: 8080
+  volumes:
+    - .:/go/src/github.com/saulshanabrook/pypi-dockerhub
+  command: sh -c "go run *.go --debug api"
+  ports:
+    - 8080:8080
+db:
+  image: postgres

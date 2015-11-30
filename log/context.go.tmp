@@ -1,0 +1,73 @@
+package log
+
+import (
+	"fmt"
+
+	"github.com/Sirupsen/logrus"
+)
+
+// Loggable represents something that has extra information for logging.
+// It is used to build up fields for logrus in a composable way.
+// So I could do something like:
+//
+//  MakeContext().add(rel).add(client).Debug("hi")
+type Loggable interface {
+	LogContext() logrus.Fields
+	LogPrefix() string
+}
+
+type LoggableError struct {
+	error
+	Context string
+}
+
+func (le *LoggableError) LogContext() logrus.Fields {
+	return logrus.Fields{
+		"error":   le.Error(),
+		"context": le.Context,
+	}
+}
+
+func (le *LoggableError) LogPrefix() string {
+	return "err"
+}
+
+// MakeErrorLogable is called with an error and some more information
+// about what made that error. For example, if you make an HTTP call,
+// the `err` would be the error returned by the http library and the
+// context would be "checking login"
+func MakeErrorLogable(err error, context string) LoggableError {
+	if err == nil {
+		return nil
+	}
+	switch err.(type) {
+	case LoggableError:
+		le := err.(LoggableError)
+		return LoggableError{
+			error:   le.error,
+			Context: fmt.Sprintf("%v -> %v", context, le.Context),
+		}
+	default:
+		return LoggableError{
+			error:   err,
+			Context: context,
+		}
+	}
+}
+
+func Add(entry *logrus.Entry, l Loggable) *logrus.Entry {
+	for key, value := range l.LogContext() {
+		key = fmt.Sprintf("%v.%v", l.LogPrefix(), key)
+		entry = entry.WithField(key, value)
+	}
+	return entry
+}
+
+func AddError(entry *logrus.Entry, e error) *logrus.Entry {
+	switch err := e.(type) {
+	case Loggable:
+		return Add(entry, err)
+	default:
+		return entry.WithField("error", err)
+	}
+}

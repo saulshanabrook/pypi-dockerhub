@@ -1,21 +1,25 @@
 package github
 
 import (
-	"github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/github.com/google/go-github/github"
+	"github.com/google/go-github/github"
 
-	"github.com/saulshanabrook/pypi-dockerhub/Godeps/_workspace/src/golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
-type Client struct {
-	client *github.Client
-	owner  string
-	repo   string
+type Repo struct {
+	Owner string
+	Name  string
 }
 
-func NewClient(token, owner, repo string) *Client {
+type Client struct {
+	*Repo
+	client *github.Client
+}
+
+func NewClient(token string, repo *Repo) *Client {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
-	return &Client{client: github.NewClient(tc), owner: owner, repo: repo}
+	return &Client{repo, github.NewClient(tc)}
 }

@@ -1,0 +1,16 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"path": "github.com/lib/pq",
+			"revision": "83c4f410d0aed80a0f44bac6a576a7f2435791f3",
+			"revisionTime": "2015-10-15T14:07:56-07:00"
+		},
+		{
+			"path": "github.com/lib/pq/oid",
+			"revision": "83c4f410d0aed80a0f44bac6a576a7f2435791f3",
+			"revisionTime": "2015-10-15T14:07:56-07:00"
+		}
+	]
+}
