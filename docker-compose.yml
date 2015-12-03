@@ -6,6 +6,7 @@ app:
   volumes:
     - .:/go/src/github.com/saulshanabrook/pypi-dockerhub
   command: sh -c "go run *.go --debug api"
+  env_file: .env
   ports:
     - 8080:8080
 db:

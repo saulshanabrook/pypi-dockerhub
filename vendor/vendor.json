@@ -3,6 +3,21 @@
 	"ignore": "",
 	"package": [
 		{
+			"path": "github.com/gosuri/uilive",
+			"revision": "eb9a944a94f38ebcfa43d48bed49e47050c1aa73",
+			"revisionTime": "2015-11-29T17:21:07-08:00"
+		},
+		{
+			"path": "github.com/gosuri/uiprogress",
+			"revision": "ab3c029b2105f9f136ebcd6b0bc121f315c9d4dc",
+			"revisionTime": "2015-11-30T07:40:11-08:00"
+		},
+		{
+			"path": "github.com/gosuri/uiprogress/util/strutil",
+			"revision": "ab3c029b2105f9f136ebcd6b0bc121f315c9d4dc",
+			"revisionTime": "2015-11-30T07:40:11-08:00"
+		},
+		{
 			"path": "github.com/lib/pq",
 			"revision": "83c4f410d0aed80a0f44bac6a576a7f2435791f3",
 			"revisionTime": "2015-10-15T14:07:56-07:00"

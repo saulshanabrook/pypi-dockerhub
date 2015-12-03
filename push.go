@@ -62,7 +62,7 @@ var push = cli.Command{
 	),
 	Action: func(c *cli.Context) {
 		dbc := getDB(c)
-		rels, err := dbc.GetToProcess()
+		rels, err := dbc.GetReleasesToProcess()
 		if err != nil {
 			logrus.WithError(err).Fatal("Couldn't get all releases from the database")
 		}

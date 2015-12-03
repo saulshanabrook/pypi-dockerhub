@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -10,10 +11,42 @@ import (
 type Release struct {
 	Name               string
 	Version            string
-	Time               int64
+	Time               time.Time
 	AddedGithub        bool
 	AddedDockerHub     bool
 	TriggeredDockerHub bool
+}
+
+// GetReleasesToProcess returns a slice of releases that still need to be processed
+// in some way
+func (c *Client) GetReleasesToProcess() (rels []Release, err error) {
+	err = c.DB.Where(Release{AddedGithub: false}).
+		Or(Release{AddedGithub: false}).
+		Or(Release{AddedDockerHub: false}).
+		Or(Release{TriggeredDockerHub: false}).
+		Find(&rels).Error
+	return
+}
+
+// GetReleases returns a slice of all releases
+func (c *Client) GetReleases() (rels []Release, err error) {
+	err = c.DB.Find(&rels).Error
+	return
+}
+
+// AddReleases adds all the releases to the database
+func (c *Client) AddReleases(rels []Release) error {
+	for _, rel := range rels {
+		var _rel Release
+		db := c.DB.Where(Release{
+			Name:    rel.Name,
+			Version: rel.Version,
+		}).FirstOrCreate(&_rel)
+		if err := db.Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Release) Fields() logrus.Fields {
@@ -45,10 +78,9 @@ func (r *Release) GitTagMessage() string {
 
 func (r *Release) GitCommitMessage() string {
 	return fmt.Sprintf(
-		"Adding version %v for %v\n\nAdded %v seconds after epoch",
+		"Adding version %v for %v\n",
 		r.Version,
 		r.Name,
-		r.Time,
 	)
 }
 

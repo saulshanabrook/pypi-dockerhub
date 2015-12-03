@@ -1,0 +1,33 @@
+package pypi
+
+import (
+	"fmt"
+	"sync/atomic"
+	"time"
+)
+
+// Counter is used for performance profiling, to count and log the occurances
+// of an event per second. It is inspired by https://gobyexample.com/atomic-counters
+type Counter struct {
+	count *uint64
+}
+
+// NewCounter creates a new counter at 0
+func NewCounter() *Counter {
+	var count uint64
+	return &Counter{&count}
+}
+
+// Increment increases the counter by one
+func (c *Counter) Increment() {
+	atomic.AddUint64(c.count, 1)
+}
+
+// Output starts a timer and then starts printing the rate per second
+func (c *Counter) Output() {
+	for {
+		count := atomic.SwapUint64(c.count, 0)
+		fmt.Printf("%v / last second\n", count)
+		time.Sleep(time.Second)
+	}
+}

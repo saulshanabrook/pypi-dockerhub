@@ -93,12 +93,30 @@ GLOBAL OPTIONS:
 
 ## Development
 
+Initially:
+
 ```bash
+echo 'DOCKERHUB_OWNER=...
+DOCKERHUB_PASSWORD=...
+DOCKERHUB_USERNAME=...
+GITHUB_OWNER=...
+GITHUB_REPO=...
+GITHUB_TOKEN=...
+' > .env
+
 docker-compose --x-networking up -d db
 docker-compose --x-networking run app go run *.go --debug create-db
 docker-compose --x-networking up -d app
 docker-compose --x-networking run app go run *.go --debug fetch
 docker-compose --x-networking run app go run *.go --debug create-github
+docker-compose --x-networking run app go run *.go --debug push
+```
+
+To process updates:
+
+```bash
+docker-compose --x-networking up -d db
+docker-compose --x-networking run app go run *.go --debug fetch --only-new
 docker-compose --x-networking run app go run *.go --debug push
 ```
 

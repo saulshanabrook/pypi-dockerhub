@@ -11,9 +11,16 @@ var deleteDB = cli.Command{
 	Usage: "Drop the database table",
 	Flags: dbFlags,
 	Action: func(c *cli.Context) {
+		logrus.Debug("Dropping release table")
 		_db := getDB(c).DB.DropTable(&db.Release{})
 		if err := _db.Error; err != nil {
-			logrus.WithError(err).Fatal("Couldn't drop the database table")
+			logrus.WithError(err).Fatal("Couldn't drop the release table")
+		}
+
+		logrus.Debug("Dropping lastupdatetime table")
+		_db = getDB(c).DB.DropTable(&db.LastUpdateTime{})
+		if err := _db.Error; err != nil {
+			logrus.WithError(err).Fatal("Couldn't drop the lastupdatetime table")
 		}
 	},
 }

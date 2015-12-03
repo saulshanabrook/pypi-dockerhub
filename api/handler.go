@@ -9,7 +9,7 @@ import (
 
 func CreateHandler(c *db.Client) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rels, err := c.GetAll()
+		rels, err := c.GetReleases()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
