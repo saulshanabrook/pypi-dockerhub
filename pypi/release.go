@@ -22,7 +22,6 @@ func (c *Client) ReleasesSince(t time.Time) ([]db.Release, error) {
 	releases := []db.Release{}
 	for _, change := range changes {
 		if change[3] == "new release" {
-			fmt.Println(time.Unix(change[2].(int64), 0))
 			releases = append(releases, db.Release{
 				Name:    change[0].(string),
 				Version: change[1].(string),

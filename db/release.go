@@ -42,6 +42,8 @@ func (c *Client) AddReleases(rels []Release) error {
 			Name:    rel.Name,
 			Version: rel.Version,
 		}).FirstOrCreate(&_rel)
+		_rel.Time = rel.Time
+		c.DB.Save(_rel)
 		if err := db.Error; err != nil {
 			return err
 		}
