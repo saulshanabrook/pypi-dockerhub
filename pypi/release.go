@@ -41,13 +41,15 @@ func (c *Client) AllReleases() ([]db.Release, error) {
 	}
 	uiprogress.Start()
 	bar := uiprogress.AddBar(len(names))
-	bar.AppendCompleted()
-	bar.PrependElapsed()
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		rate := float64(b.Current()) / b.TimeElapsed().Seconds()
+		remainingCount := b.Total - b.Current()
+		remainingTime := time.Duration(float64(remainingCount)/rate) * time.Second
+
 		return fmt.Sprintf(
-			"%v; %d/s",
-			b.Current(),
-			int(float64(b.Current())/b.TimeElapsed().Seconds()),
+			"%v left (%.f/s)",
+			remainingTime,
+			rate,
 		)
 	})
 	releases := make(chan db.Release)

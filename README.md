@@ -112,6 +112,12 @@ docker-compose --x-networking run app go run *.go --debug create-github
 docker-compose --x-networking run app go run *.go --debug push
 ```
 
+To query app:
+
+```bash
+open http://$(docker-machine ip default):8000/
+```
+
 To process updates:
 
 ```bash
