@@ -11,6 +11,6 @@ func (c *Client) CreateRepo() error {
 	repo := github.Repository{
 		Name: &c.Name,
 	}
-	_, _, err := c.client.Repositories.Create(c.Owner, &repo)
+	_, _, err := c.client.Repositories.Create("", &repo)
 	return err
 }

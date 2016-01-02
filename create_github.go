@@ -12,7 +12,7 @@ var createGithub = cli.Command{
 	Action: func(c *cli.Context) {
 		ghc := getGithubClient(c)
 		if err := ghc.CreateRepo(); err != nil {
-			logrus.WithError(err).Fatal("Couldn't delete repo in github")
+			logrus.WithError(err).Fatal("Couldn't create repo in github")
 		}
 	},
 }
